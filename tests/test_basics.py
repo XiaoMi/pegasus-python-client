@@ -2,7 +2,7 @@
 # coding=utf-8
 
 
-from pgclient import *
+from pypegasus.pgclient import *
 from twisted.trial import unittest
 import uuid
 

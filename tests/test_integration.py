@@ -1,8 +1,9 @@
 #! /usr/bin/env python
 # coding=utf-8
 
+import time
 import commands
-from pgclient import *
+from pypegasus.pgclient import *
 from twisted.trial import unittest
 
 
