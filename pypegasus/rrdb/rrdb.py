@@ -8,10 +8,15 @@
 
 from thrift.Thrift import TType, TMessageType, TException, TApplicationException
 import logging
-from ttypes import *
 from thrift.Thrift import TProcessor
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol, TProtocol
+
+from pypegasus import base
+from pypegasus.rrdb.ttypes import update_response, multi_remove_response, read_response, multi_get_request, \
+  multi_get_response, count_response, ttl_response, get_scanner_request, scan_response, scan_request, update_request, \
+  multi_put_request, multi_remove_request
+
 try:
   from thrift.protocol import fastbinary
 except:

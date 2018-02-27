@@ -1,28 +1,33 @@
 from __future__ import print_function
 from __future__ import with_statement
 
-import logging.config
+# import os
+import logging
 
+from thrift.Thrift import TMessageType, TApplicationException
 from twisted.internet import defer
 from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks, succeed, fail
 from twisted.internet.protocol import ClientCreator
 
-from base.ttypes import *
-from operate.packet import *
-from replication.ttypes import *
-from rrdb.ttypes import *
-from utils.tools import *
-from transport.protocol import TPegasusThriftClientProtocol
+from pypegasus import rrdb, replication
+from pypegasus.base.ttypes import *
+from pypegasus.operate.packet import *
+from pypegasus.replication.ttypes import query_cfg_request
+from pypegasus.rrdb import *
+from pypegasus.rrdb.ttypes import scan_request, get_scanner_request, update_request, key_value, multi_put_request, \
+    multi_get_request, multi_remove_request
+from pypegasus.transport.protocol import *
+from pypegasus.utils.tools import restore_key, get_ttl, bytes_cmp, ScanOptions
 
 try:
     from thrift.protocol import fastbinary
 except:
     fastbinary = None
 
-
-logging.config.fileConfig("logger.conf")
-logger = logging.getLogger("root")
+#
+# logging.config.fileConfig(os.path.dirname(__file__)+"/logger.conf")
+logger = logging.getLogger("pgclient")
 
 DEFAULT_TIMEOUT = 2000               # ms
 META_CHECK_INTERVAL = 2              # s
