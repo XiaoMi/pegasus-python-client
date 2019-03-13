@@ -9,6 +9,8 @@ Mod Installation
 ------------
 The mod works for Python 3.6 and 3.7, for 3.x, the thrift(>=0.9.3) should be modified as follows:
 
+Edit this file: `site-packages/thrift/transport/TTwisted.py`
+
 ```
 -from zope.interface import implements, Interface, Attribute
 +from zope.interface import implements, Interface, Attribute, implementer
