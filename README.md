@@ -5,6 +5,18 @@ This is the official python client for [xiaomi/pegasus](https://github.com/XiaoM
 
 It uses [Twisted](http://twistedmatrix.com) for the asynchronous communication with pegasus server.
 
+Mod Installation
+------------
+The mod works for Python 3.6 and 3.7, for 3.x, the thrift(>=0.9.3) should be modified as follows:
+-from zope.interface import implements, Interface, Attribute
++from zope.interface import implements, Interface, Attribute, implementer
++@implementer(IThriftServerFactory)
+class ThriftServerFactory(ServerFactory):
+-   implements(IThriftServerFactory)
++@implementer(IThriftClientFactory)
+class ThriftClientFactory(ClientFactory):
+-   implements(IThriftClientFactory)
+
 Installation
 ------------
 Python 2.x
