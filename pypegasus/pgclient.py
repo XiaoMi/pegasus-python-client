@@ -245,7 +245,7 @@ class MetaSessionManager(SessionManager):
     @inlineCallbacks
     def query_one(self, session):
         req = query_cfg_request(self.name, [])
-        op = QueryCfgOperator(gpid(0, 0), req)
+        op = QueryCfgOperator(gpid(0, 0), req, 0)
         ret = yield session.operate(op)
         defer.returnValue(ret)
 
@@ -336,13 +336,13 @@ class Table(SessionManager):
         dlist.addCallback(self.got_results)
         return dlist
 
-    def get_hash_key_pid(self, hash_key):
-        hash_value = PegasusHash.default_hash(hash_key)
-        pidx = hash_value % self.get_partition_count()
-        return gpid(self.app_id, pidx)
+    def get_hashkey_hash(self, hash_key):
+        return PegasusHash.default_hash(hash_key)
 
-    def get_gpid(self, blob_key):
-        hash_value = PegasusHash.hash(blob_key)
+    def get_blob_hash(self, blob_key):
+        return PegasusHash.hash(blob_key)
+
+    def get_gpid_by_hash(self, hash_value):
         pidx = hash_value % self.get_partition_count()
         return gpid(self.app_id, pidx)
 
@@ -373,8 +373,9 @@ class PegasusScanner(object):
     CONTEXT_ID_COMPLETED = -1
     CONTEXT_ID_NOT_EXIST = -2
 
-    def __init__(self, table, gpid_list, scan_options,
-                 start_key=blob(b'\x00\x00'), stop_key=blob(b'\xFF\xFF')):
+    def __init__(self, table, gpid_list, scan_options, hash_value_list,
+                 need_check_hash, start_key=blob(b'\x00\x00'),
+                 stop_key=blob(b'\xFF\xFF')):
         self._table = table
         self._gpid = gpid(0)
         self._gpid_list = gpid_list
@@ -384,6 +385,9 @@ class PegasusScanner(object):
         self._p = -1
         self._context_id = self.CONTEXT_ID_COMPLETED
         self._kvs = []
+        self._hash_value_list = hash_value_list
+        self._need_check_hash = need_check_hash
+        self._hash_value = 0
 
     def __repr__(self):
         lst = ['%s=%r' % (key, value)
@@ -405,6 +409,7 @@ class PegasusScanner(object):
                     defer.returnValue(None)
                 else:
                     self._gpid = self._gpid_list.pop()
+                    self._hash_value = self._hash_value_list.pop()
                     self.split_reset()
             elif self._context_id == self.CONTEXT_ID_NOT_EXIST:
                 # no valid context_id found
@@ -454,7 +459,9 @@ class PegasusScanner(object):
         request.stop_key = self._stop_key
         request.stop_inclusive = self._scan_options.stop_inclusive
         request.batch_size = self._scan_options.batch_size
-        op = RrdbGetScannerOperator(self._gpid, request)
+        request.need_check_hash = self._need_check_hash
+
+        op = RrdbGetScannerOperator(self._gpid, request, self._hash_value)
         session = self._table.get_session(self._gpid)
         if not session or not op:
             raise Exception('session or packet error!')
@@ -465,7 +472,7 @@ class PegasusScanner(object):
 
     def next_batch(self):
         request = scan_request(self._context_id)
-        op = RrdbScanOperator(self._gpid, request)
+        op = RrdbScanOperator(self._gpid, request, self._hash_value)
         session = self._table.get_session(self._gpid)
         if not session or not op:
             raise Exception('session or packet error!')
@@ -476,7 +483,7 @@ class PegasusScanner(object):
 
     def close(self):
         if self._context_id >= self.CONTEXT_ID_VALID_MIN:
-            op = RrdbClearScannerOperator(self._gpid, self._context_id)
+            op = RrdbClearScannerOperator(self._gpid, self._context_id, self._hash_value)
             session = self._table.get_session(self._gpid)
             self._context_id = self.CONTEXT_ID_COMPLETED
             if not session or not op:
@@ -662,9 +669,10 @@ class Pegasus(object):
                  ttl: in seconds, -1 means forever.
         """
         blob_key = self.generate_key(hash_key, sort_key)
-        peer_gpid = self.table.get_gpid(blob_key)
+        hash_value = self.table.get_blob_hash(blob_key)
+        peer_gpid = self.table.get_gpid_by_hash(hash_value)
         session = self.table.get_session(peer_gpid)
-        op = RrdbTtlOperator(peer_gpid, blob_key)
+        op = RrdbTtlOperator(peer_gpid, blob_key, hash_value)
         if not session or not op:
             return error_types.ERR_INVALID_STATE.value, 0
 
@@ -699,9 +707,10 @@ class Pegasus(object):
                  value: data stored in this <hash_key, sort_key>
         """
         blob_key = self.generate_key(hash_key, sort_key)
-        peer_gpid = self.table.get_gpid(blob_key)
+        hash_value = self.table.get_blob_hash(blob_key)
+        peer_gpid = self.table.get_gpid_by_hash(hash_value)
         session = self.table.get_session(peer_gpid)
-        op = RrdbGetOperator(peer_gpid, blob_key)
+        op = RrdbGetOperator(peer_gpid, blob_key, hash_value)
         if not session or not op:
             return error_types.ERR_INVALID_STATE.value, 0
 
@@ -723,9 +732,10 @@ class Pegasus(object):
                  ign: useless, should be ignored.
         """
         blob_key = self.generate_key(hash_key, sort_key)
-        peer_gpid = self.table.get_gpid(blob_key)
+        hash_value = self.table.get_blob_hash(blob_key)
+        peer_gpid = self.table.get_gpid_by_hash(hash_value)
         session = self.table.get_session(peer_gpid)
-        op = RrdbPutOperator(peer_gpid, update_request(blob_key, blob(value), get_ttl(ttl)))
+        op = RrdbPutOperator(peer_gpid, update_request(blob_key, blob(value), get_ttl(ttl)), hash_value)
         if not session or not op:
             return error_types.ERR_INVALID_STATE.value, 0
 
@@ -745,9 +755,10 @@ class Pegasus(object):
                  ign: useless, should be ignored.
         """
         blob_key = self.generate_key(hash_key, sort_key)
-        peer_gpid = self.table.get_gpid(blob_key)
+        hash_value = self.table.get_blob_hash(blob_key)
+        peer_gpid = self.table.get_gpid_by_hash(hash_value)
         session = self.table.get_session(peer_gpid)
-        op = RrdbRemoveOperator(peer_gpid, blob_key)
+        op = RrdbRemoveOperator(peer_gpid, blob_key, hash_value)
         if not session or not op:
             return error_types.ERR_INVALID_STATE.value, 0
 
@@ -765,9 +776,10 @@ class Pegasus(object):
                  code: error_types.ERR_OK.value when data got succeed, error_types.ERR_OBJECT_NOT_FOUND.value when data not found.
                  value: total sort key count under the hash_key.
         """
-        peer_gpid = self.table.get_hash_key_pid(hash_key)
+        hash_value = self.table.get_hashkey_hash(hash_key)
+        peer_gpid = self.table.get_gpid_by_hash(hash_value)
         session = self.table.get_session(peer_gpid)
-        op = RrdbSortkeyCountOperator(peer_gpid, blob(hash_key))
+        op = RrdbSortkeyCountOperator(peer_gpid, blob(hash_key), hash_value)
         if not session or not op:
             return error_types.ERR_INVALID_STATE.value, 0
 
@@ -787,12 +799,13 @@ class Pegasus(object):
                  code: error_types.ERR_OK.value when data stored succeed.
                  ign: useless, should be ignored.
         """
-        peer_gpid = self.table.get_hash_key_pid(hash_key)
+        hash_value = self.table.get_hashkey_hash(hash_key)
+        peer_gpid = self.table.get_gpid_by_hash(hash_value)
         session = self.table.get_session(peer_gpid)
         kvs = [key_value(blob(str(k)), blob(str(v))) for k, v in sortkey_value_dict.items()]
         ttl = get_ttl(ttl)
         req = multi_put_request(blob(hash_key), kvs, ttl)
-        op = RrdbMultiPutOperator(peer_gpid, req)
+        op = RrdbMultiPutOperator(peer_gpid, req, hash_value)
         if not session or not op:
             return error_types.ERR_INVALID_STATE.value, 0
 
@@ -819,7 +832,8 @@ class Pegasus(object):
                  code: error_types.ERR_OK.value when data got succeed.
                  kvs: <sort_key, value> pairs in dict.
         """
-        peer_gpid = self.table.get_hash_key_pid(hash_key)
+        hash_value = self.table.get_hashkey_hash(hash_key)
+        peer_gpid = self.table.get_gpid_by_hash(hash_value)
         session = self.table.get_session(peer_gpid)
         ks = []
         if sortkey_set is None:
@@ -832,7 +846,7 @@ class Pegasus(object):
         req = multi_get_request(blob(hash_key), ks,
                                 max_kv_count, max_kv_size,
                                 no_value)
-        op = RrdbMultiGetOperator(peer_gpid, req)
+        op = RrdbMultiGetOperator(peer_gpid, req, hash_value)
         if not session or not op:
             return error_types.ERR_INVALID_STATE.value, 0
 
@@ -860,7 +874,8 @@ class Pegasus(object):
                  code: error_types.ERR_OK.value when data got succeed.
                  kvs: <sort_key, value> pairs in dict.
         """
-        peer_gpid = self.table.get_hash_key_pid(hash_key)
+        hash_value = self.table.get_hashkey_hash(hash_key)
+        peer_gpid = self.table.get_gpid_by_hash(hash_value)
         session = self.table.get_session(peer_gpid)
         req = multi_get_request(blob(hash_key),
                                 None,
@@ -874,7 +889,7 @@ class Pegasus(object):
                                 multi_get_options.sortkey_filter_type,
                                 blob(multi_get_options.sortkey_filter_pattern),
                                 multi_get_options.reverse)
-        op = RrdbMultiGetOperator(peer_gpid, req)
+        op = RrdbMultiGetOperator(peer_gpid, req, hash_value)
         if not session or not op:
             return error_types.ERR_INVALID_STATE.value, 0
 
@@ -914,7 +929,8 @@ class Pegasus(object):
                  code: error_types.ERR_OK.value when data got succeed.
                  count: count of deleted k-v pairs.
         """
-        peer_gpid = self.table.get_hash_key_pid(hash_key)
+        hash_value = self.table.get_hashkey_hash(hash_key)
+        peer_gpid = self.table.get_gpid_by_hash(hash_value)
         session = self.table.get_session(peer_gpid)
         ks = []
         if isinstance(sortkey_set, set):
@@ -923,7 +939,7 @@ class Pegasus(object):
             return error_types.ERR_INVALID_PARAMETERS.value, 0
 
         req = multi_remove_request(blob(hash_key), ks)     # 100 limit?
-        op = RrdbMultiRemoveOperator(peer_gpid, req)
+        op = RrdbMultiRemoveOperator(peer_gpid, req, hash_value)
         if not session or not op:
             return error_types.ERR_INVALID_STATE.value, 0
 
@@ -947,12 +963,15 @@ class Pegasus(object):
         if not stop_inclusive:
             scan_options.stop_inclusive = stop_inclusive
         gpid_list = []
+        hash_list = []
         r = bytes_cmp(start_key.data, stop_key.data)
         if r < 0 or                                                                     \
            (r == 0 and scan_options.start_inclusive and scan_options.stop_inclusive):
-            gpid_list.append(self.table.get_gpid(start_key))
+            hash_value = self.table.get_blob_hash(start_key)
+            hash_list.append(hash_value)
+            gpid_list.append(self.table.get_gpid_by_hash(hash_value))
 
-        return PegasusScanner(self.table, gpid_list, scan_options, start_key, stop_key)
+        return PegasusScanner(self.table, gpid_list, scan_options, hash_list, False, start_key, stop_key)
 
     def get_unordered_scanners(self, max_split_count, scan_options):
         """
@@ -979,11 +998,14 @@ class Pegasus(object):
         scanner_list = []
         for i in range(split):
             gpid_list = []
+            hash_list = []
             s = i < more and size + 1 or size
             for j in range(s):
                 if all_gpid_list:
-                    gpid_list.append(all_gpid_list.pop())
+                    count -= 1
+                    gpid_list.append(all_gpid_list[count])
+                    hash_list.append(long(count))
 
-            scanner_list.append(PegasusScanner(self.table, gpid_list, opt))
+            scanner_list.append(PegasusScanner(self.table, gpid_list, opt, hash_list, True))
 
         return scanner_list
