@@ -256,5 +256,5 @@ class TestIntegration(unittest.TestCase):
             ret = yield s.get_next()
             self.assertEqual(ret, None)
             s.close()
-        except Exception, e:
+        except Exception as e:
             self.assertEqual(e.args[0], 'session or packet error!')
