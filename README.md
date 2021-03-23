@@ -40,7 +40,7 @@ Before testing, you should firstly start an onebox cluster, referring to [`how t
 
 ## Basic interfaces test:
 
-`python -m twisted.trial test_basics.py`
+`python -m unittest test_basics.TestBasics`
 
 ## Integration test:
 

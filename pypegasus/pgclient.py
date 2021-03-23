@@ -42,7 +42,7 @@ class BaseSession(object):
         self._oprot_factory = oprot_factory
         self._container = container
         self._seqid = 0
-        self._reqs = {}
+        self._requests = {}
         self._default_timeout = timeout
 
     def __del__(self):
@@ -52,10 +52,10 @@ class BaseSession(object):
         return self._transport.get_peer_addr()
 
     def cb_send(self, _, seqid):
-        return self._reqs[seqid]
+        return self._requests[seqid]
 
     def eb_send(self, f, seqid):
-        d = self._reqs.pop(seqid)
+        d = self._requests.pop(seqid)
         d.errback(f)
         logger.warning('peer: %s, failure: %s',
                        self.get_peer_addr(), f)
@@ -79,7 +79,7 @@ class BaseSession(object):
         seqid = self._seqid = self._seqid + 1           # TODO should keep atomic
         dr = defer.Deferred()
         dr.addErrback(self.eb_recv)
-        self._reqs[seqid] = dr
+        self._requests[seqid] = dr
 
         # ds(deferred send) will wait dr(deferred receive)
         ds = defer.maybeDeferred(self.send_req, op, seqid)
@@ -101,11 +101,11 @@ class BaseSession(object):
         oprot.trans.flush()
 
     def recv_ACK(self, iprot, mtype, rseqid, errno, result_type, parser):
-        if rseqid not in self._reqs:
+        if rseqid not in self._requests:
             logger.warning('peer: %s rseqid: %s not found',
                            self.get_peer_addr(), rseqid)
             return
-        d = self._reqs.pop(rseqid)
+        d = self._requests.pop(rseqid)
         if errno != 'ERR_OK':
             rc = error_code.value_of(errno)
             self._container.update_state(rc)
@@ -489,9 +489,16 @@ class PegasusScanner(object):
 
 
 class PegasusHash(object):
-
-    polynomial = 0x9a6c9329ac4bc9b5
+    polynomial, = struct.unpack('<q', struct.pack('<Q', 0x9a6c9329ac4bc9b5))
     table_forward = [0] * 256
+
+    @classmethod
+    def unsigned_right_shift(cls, val, n):
+        if val >= 0:
+            val >>= n
+        else:
+            val = ((val + 0x10000000000000000) >> n)
+        return val
 
     @classmethod
     def populate_table(cls):
@@ -499,10 +506,10 @@ class PegasusHash(object):
             crc = i
             for j in range(8):
                 if crc & 1:
-                    crc >>= 1
+                    crc = cls.unsigned_right_shift(crc, 1)
                     crc ^= cls.polynomial
                 else:
-                    crc >>= 1
+                    crc = cls.unsigned_right_shift(crc, 1)
             cls.table_forward[i] = crc
 
     @classmethod
