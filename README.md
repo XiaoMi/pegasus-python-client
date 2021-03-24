@@ -5,30 +5,14 @@ This is the official python client for [xiaomi/pegasus](https://github.com/XiaoM
 
 It uses [Twisted](http://twistedmatrix.com) for the asynchronous communication with pegasus server.
 
-Mod Installation
-------------
-The mod works for Python 3.6 and 3.7, for 3.x, the thrift(>=0.9.3) should be modified as follows:
-
-Edit this file: `site-packages/thrift/transport/TTwisted.py`
-
-```
--from zope.interface import implements, Interface, Attribute
-+from zope.interface import implements, Interface, Attribute, implementer
-+@implementer(IThriftServerFactory)
-class ThriftServerFactory(ServerFactory):
--   implements(IThriftServerFactory)
-+@implementer(IThriftClientFactory)
-class ThriftClientFactory(ClientFactory):
--   implements(IThriftClientFactory)
-```
-
 Installation
 ------------
-Python 2.x
+Python 3.8+
 
 pypegasus can be installed via pip as follows:
 
-`pip install pypegasus`
+`git clone https://git.n.xiaomi.com/pegasus/pegasus-python-client`
+`cd pegasus-python-client && python setup.py install`
 
 Usage
 -----
@@ -40,17 +24,17 @@ Before testing, you should firstly start an onebox cluster, referring to [`how t
 
 ## Basic interfaces test:
 
-`python -m unittest test_basics.TestBasics`
+`cd tests && python -m unittest test_basics.TestBasics`
 
 ## Integration test:
 
-`python -m twisted.trial test_integration.py`
+`cd tests && python -m twisted.trial test_integration.py`
 
 ATTENTION: you should firstly set proper pegasus shell path in [`test_integration.py`](test_integration.py#L10).
 
 ## Benchmark test:
 
-`python -m twisted.trial test_benchmark.py`
+`cd tests && python -m unittest test_benchmark.TestBasics`
 
 The test result on my personal PC (CPU: Intel i7-7700 3.60GHz, mem: 8G) is:
 ```
