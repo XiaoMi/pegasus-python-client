@@ -480,7 +480,6 @@ class TestBasics(unittest.TestCase):
 
         o = ScanOptions()
         s = self.c.get_scanner(rand_hkey + rand_key, '\x00\x00', '\xFF\xFF', o)
-        pprint(vars(s))
         get_count = 0
         last_sk = None
         while True:
