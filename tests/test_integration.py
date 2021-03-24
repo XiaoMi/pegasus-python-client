@@ -233,8 +233,8 @@ class TestIntegration(unittest.TestCase):
 
         for i in range(1, 3):
             ServerOperator.stop_1_replica(i)
-
-        yield self.check_data()
+            
+            yield self.check_data()
 
     @inlineCallbacks
     def test_1of5_replica_stop_and_start_with_meta_stop_and_start(self):
