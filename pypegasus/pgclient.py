@@ -20,6 +20,7 @@ from pypegasus.rrdb.ttypes import scan_request, get_scanner_request, update_requ
     multi_get_request, multi_remove_request
 from pypegasus.transport.protocol import *
 from pypegasus.utils.tools import restore_key, get_ttl, bytes_cmp, ScanOptions
+from pprint import pprint
 
 try:
     from thrift.protocol import fastbinary
@@ -889,6 +890,7 @@ class Pegasus(object):
         if not session or not op:
             return error_types.ERR_INVALID_STATE.value, 0
 
+        pprint(vars(op))
         return session.operate(op, timeout)
 
     def get_sort_keys(self, hash_key,
