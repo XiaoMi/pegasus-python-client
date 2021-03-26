@@ -233,6 +233,7 @@ class TestIntegration(unittest.TestCase):
 
         for i in range(1, 3):
             ServerOperator.stop_1_replica(i)
+
             yield self.check_data()
 
     @inlineCallbacks
