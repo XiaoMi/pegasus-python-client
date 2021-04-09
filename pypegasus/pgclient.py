@@ -339,7 +339,7 @@ class Table(SessionManager):
 
     def get_hash_key_pid(self, hash_key):
         if six.PY3 and isinstance(hash_key, six.string_types):
-            hash_key = hash_key.encode("utf8")
+            hash_key = hash_key.encode("UTF-8")
         hash_value = PegasusHash.default_hash(hash_key)
         pidx = hash_value % self.get_partition_count()
         return gpid(self.app_id, pidx)
@@ -552,9 +552,9 @@ class Pegasus(object):
     def generate_key(cls, hash_key, sort_key):
         # assert(len(hash_key) < sys.maxsize > 1)
         if six.PY3 and isinstance(hash_key, six.string_types):
-            hash_key = hash_key.encode("utf8")
+            hash_key = hash_key.encode("UTF-8")
         if six.PY3 and isinstance(sort_key, six.string_types):
-            sort_key = sort_key.encode("utf8")
+            sort_key = sort_key.encode("UTF-8")
 
         # hash_key_len is in big endian
         hash_key_len = len(hash_key)
