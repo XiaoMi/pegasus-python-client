@@ -21,7 +21,7 @@ def getstatusoutput(cmd):
     return status, data
 
 class ServerOperator(object):
-    shell_path = '/home/smilencer/Code/incubator-pegasus'
+    shell_path = '/your/pegasus-shell/dir'
 
     @classmethod
     def modify_conf(cls, old_conf, new_conf):
