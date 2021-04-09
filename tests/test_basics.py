@@ -70,6 +70,19 @@ class TestBasics(unittest.TestCase):
         self.assertEqual(bytes.decode(v), self.TEST_VALUE)
 
     @inlineCallbacks
+    def test_binary_get_ok(self):
+        b_hk = b"\x00"+os.urandom(4)+b"\x00"
+        b_sk = b"\x00" + os.urandom(4) + b"\x00"
+        b_v = b"\x00" + os.urandom(4) + b"\x00"
+
+        (ret, ign) = yield self.c.set(b_hk, b_sk, b_v)
+        self.assertEqual(ret, error_types.ERR_OK.value)
+
+        (rc, v) = yield self.c.get(b_hk, b_sk)
+        self.assertEqual(rc, error_types.ERR_OK.value)
+        self.assertEqual(v, b_v)
+
+    @inlineCallbacks
     def test_get_none(self):
         (ret, ign) = yield self.c.remove(self.TEST_HKEY, self.TEST_SKEY)
         self.assertEqual(ret, error_types.ERR_OK.value)
