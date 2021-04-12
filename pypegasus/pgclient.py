@@ -255,6 +255,7 @@ class MetaSessionManager(SessionManager):
             if suc                                                    \
                and result.__class__.__name__ == "query_cfg_response"  \
                and result.is_stateful:
+                logger.info(type(result))
                 logger.info('table: %s, partition result: %s',
                             self.name, result)
                 return result
