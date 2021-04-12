@@ -25,7 +25,7 @@ class ServerOperator(object):
 
     @classmethod
     def modify_conf(cls, old_conf, new_conf):
-        origin_conf_file = cls.shell_path + '/home/smilencer/Code/incubator-pegasus'
+        origin_conf_file = cls.shell_path + '/src/server/config-server.ini'
         status, output = getstatusoutput('sed -i "s/%s/%s/" %s'
                                                   % (old_conf, new_conf, origin_conf_file))
         # print(status, output)
@@ -79,11 +79,10 @@ class ServerOperator(object):
     @classmethod
     def wait_until_cluster_health(cls):
         while True:
-            cmd =('cd %s && echo "app temp -d" | ./run.sh shell |'
+            status, output = getstatusoutput(
+                'cd %s && echo "app temp -d" | ./run.sh shell |'
                 ' grep fully_healthy_partition_count | awk \'{print $NF}\''
                 % cls.shell_path)
-            status, output = getstatusoutput(cmd)
-            print(status,output,type(output))
             if status == 0 and output == '0':           # TODO '8' should fix
                 break
 
