@@ -117,7 +117,8 @@ class TestIntegration(unittest.TestCase):
     def loop_op(self):
         for i in range(self.DATA_COUNT):
             ret = yield self.c.get(self.TEST_HKEY + str(i), self.TEST_SKEY, 1000)
-            if not isinstance(ret, tuple) or ret[0] != error_types.ERR_OK.value or ret[1] != self.TEST_VALUE:
+            print("!!!",ret)
+            if not isinstance(ret, tuple) or ret[0] != error_types.ERR_OK.value or bytes.decode(ret[1]) != self.TEST_VALUE:
                 defer.returnValue(False)
         defer.returnValue(True)
 
@@ -142,7 +143,6 @@ class TestIntegration(unittest.TestCase):
         yield self.init(3, 3)
         (ret, ign) = yield self.c.set(self.TEST_HKEY, self.TEST_SKEY, self.TEST_VALUE)
         self.assertEqual(ret, error_types.ERR_OK.value)
-
     @inlineCallbacks
     def test_can_not_connect(self):
         self.c = Pegasus(['127.0.1.1:34601', '127.0.0.1:34602', '127.0.0.1:34603'], 'temp')
