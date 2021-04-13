@@ -22,7 +22,7 @@ def getstatusoutput(cmd):
 
 
 class ServerOperator(object):
-    shell_path = '/home/smilencer/Code/incubator-pegasus'
+    shell_path = '/your/pegasus-shell/dir'
 
     @classmethod
     def modify_conf(cls, old_conf, new_conf):
@@ -35,7 +35,6 @@ class ServerOperator(object):
     def start_cluster(cls, meta_count, replica_count, check_health):
         status, output = getstatusoutput('cd %s && ./run.sh start_onebox -m %s -r %s'
                                          % (cls.shell_path, meta_count, replica_count))
-        print(status, output)
         if check_health:
             cls.wait_until_cluster_health()
         else:
@@ -80,7 +79,6 @@ class ServerOperator(object):
         cmd = ('cd %s && echo "app temp -d" | ./run.sh shell |'
                ' grep fully_healthy_partition_count | awk \'{print $NF}\''
                % cls.shell_path)
-        print(cmd)
         while True:
             status, output = getstatusoutput(cmd)
             # 0 means return value, 8 means fully_healthy_partition_count = 8
@@ -93,7 +91,7 @@ class TestIntegration(unittest.TestCase):
     TEST_SKEY = 'test_skey_1'
     TEST_VALUE = 'test_value_1'
     DATA_COUNT = 500
-    MAX_RETRY_COUNT = 100
+    MAX_RETRY_COUNT = 30
     check_health = True
 
     def setUp(self):
@@ -117,7 +115,6 @@ class TestIntegration(unittest.TestCase):
     def loop_op(self):
         for i in range(self.DATA_COUNT):
             ret = yield self.c.get(self.TEST_HKEY + str(i), self.TEST_SKEY, 1000)
-            print("!!!",ret)
             if not isinstance(ret, tuple) or ret[0] != error_types.ERR_OK.value or bytes.decode(ret[1]) != self.TEST_VALUE:
                 defer.returnValue(False)
         defer.returnValue(True)
@@ -125,13 +122,10 @@ class TestIntegration(unittest.TestCase):
     @inlineCallbacks
     def check_data(self):
         wait_times = 0
-        t = 0
         while True:
             ret = yield self.loop_op()
-            t += 1
             if not ret:
                 wait_times += 1
-                print(wait_times, t)
                 time.sleep(1)
                 if wait_times >= self.MAX_RETRY_COUNT:
                     self.assertTrue(False)

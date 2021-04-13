@@ -71,7 +71,7 @@ class TestBasics(unittest.TestCase):
 
     @inlineCallbacks
     def test_binary_get_ok(self):
-        b_hk = b"\x00"+os.urandom(4)+b"\x00"
+        b_hk = b"\x00" + os.urandom(4) + b"\x00"
         b_sk = b"\x00" + os.urandom(4) + b"\x00"
         b_v = b"\x00" + os.urandom(4) + b"\x00"
 
@@ -459,7 +459,6 @@ class TestBasics(unittest.TestCase):
     def test_get_sort_keys_none(self):
         rand_key = uuid.uuid1().hex
         (rc, get_ks) = yield self.c.get_sort_keys(self.TEST_HKEY + rand_key)
-
         self.assertEqual(rc, error_types.ERR_OK.value)
         self.assertEqual(len(get_ks), 0)
 
