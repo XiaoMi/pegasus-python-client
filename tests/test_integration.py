@@ -116,7 +116,7 @@ class TestIntegration(unittest.TestCase):
     @inlineCallbacks
     def loop_op(self):
         for i in range(self.DATA_COUNT):
-            ret = yield self.c.get(self.TEST_HKEY + str(i), self.TEST_SKEY, 200)
+            ret = yield self.c.get(self.TEST_HKEY + str(i), self.TEST_SKEY, 1000)
             if not isinstance(ret, tuple) or ret[0] != error_types.ERR_OK.value or ret[1] != self.TEST_VALUE:
                 defer.returnValue(False)
         defer.returnValue(True)
@@ -124,10 +124,13 @@ class TestIntegration(unittest.TestCase):
     @inlineCallbacks
     def check_data(self):
         wait_times = 0
+        t = 0
         while True:
             ret = yield self.loop_op()
+            t += 1
             if not ret:
                 wait_times += 1
+                print(wait_times, t)
                 time.sleep(1)
                 if wait_times >= self.MAX_RETRY_COUNT:
                     self.assertTrue(False)
