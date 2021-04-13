@@ -34,7 +34,7 @@ class ServerOperator(object):
     def start_cluster(cls, meta_count, replica_count, check_health):
         status, output = getstatusoutput('cd %s && ./run.sh start_onebox -m %s -r %s'
                                                   % (cls.shell_path, meta_count, replica_count))
-        # print(status, output)
+        print(status,output)
         if check_health:
             cls.wait_until_cluster_health()
         else:
@@ -44,11 +44,9 @@ class ServerOperator(object):
     def stop_and_clear_cluster(cls):
         status, output = getstatusoutput('cd %s && ./run.sh stop_onebox'
                                                   % cls.shell_path)
-        # print(status, output)
 
         status, output = getstatusoutput('cd %s && ./run.sh clear_onebox'
                                                   % cls.shell_path)
-        # print(status, output)
 
     @classmethod
     def operate_1_server(cls, op_type, server_type, index):
@@ -83,7 +81,8 @@ class ServerOperator(object):
                 'cd %s && echo "app temp -d" | ./run.sh shell |'
                 ' grep fully_healthy_partition_count | awk \'{print $NF}\''
                 % cls.shell_path)
-            if status == 0 and output == '0':           # TODO '8' should fix
+            # 0 means return value, 8 means fully_healthy_partition_count = 8
+            if status == 0 and output == '8':
                 break
 
 
@@ -92,7 +91,7 @@ class TestIntegration(unittest.TestCase):
     TEST_SKEY = 'test_skey_1'
     TEST_VALUE = 'test_value_1'
     DATA_COUNT = 500
-    MAX_RETRY_COUNT = 30
+    MAX_RETRY_COUNT = 100
     check_health = True
 
     def setUp(self):
@@ -135,10 +134,8 @@ class TestIntegration(unittest.TestCase):
 
     @inlineCallbacks
     def test_replica_start(self):
-        # yield self.init(3, 3)
-        self.c = Pegasus(['127.0.1.1:34601'], 'temp')
-        ret = yield self.c.init()
-        (ret, ign) = yield self.c.set(self.TEST_HKEY , self.TEST_SKEY, self.TEST_VALUE)
+        yield self.init(3, 3)
+        (ret, ign) = yield self.c.set(self.TEST_HKEY, self.TEST_SKEY, self.TEST_VALUE)
         self.assertEqual(ret, error_types.ERR_OK.value)
 
 
