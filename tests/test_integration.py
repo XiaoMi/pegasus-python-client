@@ -137,6 +137,7 @@ class TestIntegration(unittest.TestCase):
         yield self.init(3, 3)
         (ret, ign) = yield self.c.set(self.TEST_HKEY, self.TEST_SKEY, self.TEST_VALUE)
         self.assertEqual(ret, error_types.ERR_OK.value)
+
     @inlineCallbacks
     def test_can_not_connect(self):
         self.c = Pegasus(['127.0.1.1:34601', '127.0.0.1:34602', '127.0.0.1:34603'], 'temp')
