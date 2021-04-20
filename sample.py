@@ -35,7 +35,7 @@ def basic_test():
 
     # get
     ret = yield c.get('hkey1', 'skey1')
-    print('get ret: ', bytes.decode())
+    print('get ret: ', ret)
 
     ret = yield c.get('hkey1', 'skey2')
     print('get ret: ', ret)
