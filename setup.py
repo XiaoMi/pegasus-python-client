@@ -12,7 +12,7 @@ setup(
     license='Apache License 2.0',
     author='Lai Yingchun',
     author_email='laiyingchun@xiaomi.com',
-    description='python3 client for xiaomi/pegasus',
+    description='python3 client for apache/incubator-pegasus',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Operating System :: OS Independent',
