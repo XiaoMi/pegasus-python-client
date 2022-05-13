@@ -864,7 +864,7 @@ class Pegasus(object):
         if sortkey_set is None:
             pass
         elif isinstance(sortkey_set, set):
-            ks = [blob(str(k)) for k in sortkey_set]
+            ks = [blob(k) for k in sortkey_set]
         else:
             return error_types.ERR_INVALID_PARAMETERS.value, 0
 
@@ -959,7 +959,7 @@ class Pegasus(object):
         session = self.table.get_session(peer_gpid)
         ks = []
         if isinstance(sortkey_set, set):
-            ks = [blob(str(k)) for k in sortkey_set]
+            ks = [blob(k) for k in sortkey_set]
         else:
             return error_types.ERR_INVALID_PARAMETERS.value, 0
 
