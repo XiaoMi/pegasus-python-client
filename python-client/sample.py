@@ -11,7 +11,7 @@ from twisted.internet.defer import inlineCallbacks, Deferred
 @inlineCallbacks
 def basic_test():
     # init
-    c = Pegasus(['127.0.0.1:34601', '127.0.0.1:34602', '127.0.0.1:34603'], 'temp')
+    c = Pegasus(['10.38.166.18:31601', '10.38.162.231:31601'], 'jiashuo')
 
     suc = yield c.init()
     if not suc:
@@ -25,34 +25,6 @@ def basic_test():
         print('set ret: ', ret)
     except Exception as e:
         print(e)
-
-    # exist
-    ret = yield c.exist('hkey1', 'skey1')
-    print('exist ret: ', ret)
-
-    ret = yield c.exist('hkey1', 'skey2')
-    print('exist ret: ', ret)
-
-    # get
-    ret = yield c.get('hkey1', 'skey1')
-    print('get ret: ', ret)
-
-    ret = yield c.get('hkey1', 'skey2')
-    print('get ret: ', ret)
-
-    # ttl
-    yield c.set('hkey2', 'skey1', 'value', 123)
-
-    d = Deferred()
-    reactor.callLater(2, d.callback, 'ok')      # 2 seconds later
-    yield d
-
-    ret = yield c.ttl('hkey2', 'skey1')
-    print('ttl ret: ', ret)
-
-    # remove
-    ret = yield c.remove('hkey2', 'skey1')
-    print('remove ret: ', ret)
 
     # multi_set
     kvs = {'skey1': 'value1', 'skey2': 'value2', 'skey3': 'value3'}
@@ -73,57 +45,6 @@ def basic_test():
 
     ret = yield c.multi_get('hkey3', ks, 100, 10000, True)
     print('multi_get ret: ', ret)
-
-    # sort_key_count
-    ret = yield c.sort_key_count('hkey3')
-    print('sort_key_count ret: ', ret)
-
-    # get_sort_keys
-    ret = yield c.get_sort_keys('hkey3', 100, 10000)
-    print('get_sort_keys ret: ', ret)
-
-    # multi_del
-    ret = yield c.multi_del('hkey3', ks)
-    print('multi_del ret: ', ret)
-
-    # scan
-    o = ScanOptions()
-    o.batch_size = 1
-    s = c.get_scanner('hkey3', '1', '7', o)
-    while True:
-        try:
-            ret = yield s.get_next()
-            print('get_next ret: ', ret)
-        except Exception as e:
-            print(e)
-            break
-
-        if not ret:
-            break
-    s.close()
-
-    # scan all
-    yield c.multi_set('0', kvs, 999)
-    yield c.multi_set('1', kvs, 999)
-    yield c.multi_set('2', kvs, 999)
-    yield c.multi_set('3', kvs, 999)
-    yield c.multi_set('4', kvs, 999)
-    yield c.multi_set('5', kvs, 999)
-    yield c.multi_set('6', kvs, 999)
-
-    ss = c.get_unordered_scanners(3, o)
-    for s in ss:
-        while True:
-            try:
-                ret = yield s.get_next()
-                print('get_next ret: ', ret)
-            except Exception as e:
-                print(e)
-                break
-
-            if not ret:
-                break
-        s.close()
 
     reactor.stop()
 
