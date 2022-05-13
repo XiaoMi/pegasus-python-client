@@ -827,7 +827,7 @@ class Pegasus(object):
         partition_hash = self.table.get_hashkey_hash(hash_key)
         peer_gpid = self.table.get_gpid_by_hash(partition_hash)
         session = self.table.get_session(peer_gpid)
-        kvs = [key_value(blob(str(k)), blob(str(v))) for k, v in sortkey_value_dict.items()]
+        kvs = [key_value(blob(k), blob(v)) for k, v in sortkey_value_dict.items()]
         ttl = get_ttl(ttl)
         req = multi_put_request(blob(hash_key), kvs, ttl)
         op = RrdbMultiPutOperator(peer_gpid, req, partition_hash)
