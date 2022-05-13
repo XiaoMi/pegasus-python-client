@@ -27,7 +27,7 @@ def basic_test():
         print(e)
 
     # multi_set
-    kvs = {'skey1': 'value1', 'skey2': 'value2', 'skey3': 'value3'}
+    kvs = {'skey1': b'value1', 'skey2': b'value2', 'skey3': b'value3'}
     ret = yield c.multi_set('hkey3', kvs, 999)
     print('multi_set ret: ', ret)
 
